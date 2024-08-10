@@ -34,6 +34,7 @@ async function run() {
 
     const database = client.db("coffeeStore");
     const coffeeCollection = database.collection("coffees");
+    const userCollection = database.collection("user");
 
     app.get('/coffees', async(req, res)=>{
         const coffees = await coffeeCollection.find().toArray();
@@ -81,6 +82,46 @@ async function run() {
         res.status(200).json({ message: 'Coffee deleted successfully', deletedCount: result.deletedCount });
         // res.send(result);
     });
+
+    // user related apis
+    app.get('/user', async(req, res)=>{
+      const cursor = userCollection.find();
+      const users = await cursor.toArray();
+      res.send(users);
+    })
+    app.post('/user', async(req, res)=>{
+      const user = req.body;
+      console.log(user);
+      const result = await userCollection.insertOne(user);
+      // res.send(result);
+      res.status(201).json({ message: 'Coffee added successfully', insertedId: result.insertedId });
+    })
+
+    app.patch('/user', async(req, res)=>{
+      const user = req.body;
+      const filter = {email: user.email}
+      const updateDoc = {
+        $set:{
+          lastLoggedAt: user.lastLoggedAt
+        }
+      }
+      const result = await userCollection.updateOne(filter, updateDoc);
+      if(result.matchedCount === 0) return res.status(404).json({ message: 'User not found' });
+        res.status(200).json({ message: 'User updated successfully', updatedCount: result.modifiedCount });
+        // res.send(result);
+
+    })
+
+    app.delete('/user/:id', async(req, res)=>{
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)};
+      const result = await userCollection.deleteOne(query);
+      if(result.deletedCount === 0) return res.status(404).json({ message: 'User not found' });
+        // res.json({ message: 'User deleted successfully', deletedCount });
+        res.status(200).json({ message: 'User deleted successfully', deletedCount: result.deletedCount });
+        // res.send(result);
+    })
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
